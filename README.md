@@ -16,7 +16,7 @@ Follow these steps carefully. Setting up an API key to remotely access Disqus is
 4. *If you have existing ExpressionEngine comments to export*, go to your new forum's settings and check the box marked “Allow guests to comment”. (You can uncheck this as soon as your export is finished, if you wish.)
 4. Go to [http://disqus.com/api/applications/](http://disqus.com/api/applications/), and click “Register new application”. Give your application a name (can be the same as your forum).
 5. Once your Disqus API application has been created, scroll down to the bottom of the General Settings page and check the box next to your forum name. This will give your application write access to export existing EE comments.<br />
-**NOTE:** Right now there is nowhere to add these. It is a known issue with Disqus itself. As a result, a workaround is implemented using a hardcoded special API key. **However**, the workaround does not allow setting the date of comments. They will be exported in the proper *order*, but the dates will all be right on top of each other.
+**NOTE:** Right now this step is not actually possible -- it is a known issue with Disqus itself. As a result, a workaround is implemented using a hardcoded special API key. **However**, the workaround does not allow setting the date of comments. They will be exported in the proper *order*, but the dates will all be right on top of each other.
 6. Also at the bottom of the API application Settings page, make sure that under “Access”, you have selected “Read and Write”.
 7. Copy the “Secret Key” and the “Access Token” from your Disqus API application Details page to the CX Disqus settings page. You’re now ready to add CX Disqus to your templates!
 
