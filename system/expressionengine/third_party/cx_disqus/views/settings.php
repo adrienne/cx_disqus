@@ -39,6 +39,12 @@
 	);
 
 	$this->table->add_row(
+		'<strong>'.lang('access_token').'</strong>'.BR.
+		'<div class="subtext">'.lang('access_token_desc').'</div>',
+		form_input('access_token', $access_token)
+	);
+
+	$this->table->add_row(
 		'<strong>'.lang('advanced').'</strong>',
 		'<label>'.form_checkbox('reset_import', 'y').' '.lang('reset_import').'</label>'.BR.
 		'<div class="subtext">'.lang('reset_import_desc').'</div>'

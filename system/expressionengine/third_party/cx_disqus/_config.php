@@ -4,8 +4,9 @@ if ( ! defined('CX_DISQUS_NAME'))
 {
 	define('CX_DISQUS_NAME', 'CX Disqus Comments');
 	define('CX_DISQUS_CLASS', 'Cx_disqus');
-	define('CX_DISQUS_VERSION', '1.2.3');
-	define('CX_DISQUS_DOCS', 'https://github.com/expressodev/cx_disqus');
+	define('CX_DISQUS_VERSION', '1.2.4');
+    define('CX_DISQUS_DOCS', 'https://github.com/expressodev/cx_disqus');
+	define('CX_API_THROTTLE', 5);
 }
 
 $config['name'] = CX_DISQUS_NAME;

@@ -9,9 +9,9 @@
  * file that was distributed with this source code.
  */
 
-class Cx_disqus {
+include(PATH_THIRD.'cx_disqus/_config.php');
 
-	const API_THROTTLE = 600; // seconds between API requests
+class Cx_disqus {
 
 	public function __construct()
 	{
@@ -86,7 +86,7 @@ EOT;
 	})();';
 
 		// determine whether we need to run a comment sync
-		$sync_interval = self::API_THROTTLE;
+		$sync_interval = CX_API_THROTTLE;
 		if ($this->EE->TMPL->fetch_param('sync') !== FALSE)
 		{
 			$sync_interval = (int)$this->EE->TMPL->fetch_param('sync');
@@ -116,7 +116,7 @@ EOT;
 	{
 		// determine whether we need to run the comment sync
 		// (another client may have already called this function)
-		$sync_interval = self::API_THROTTLE;
+		$sync_interval = CX_API_THROTTLE;
 		if ($this->EE->input->get('sync') !== FALSE)
 		{
 			$sync_interval = (int)$this->EE->input->get('sync');
@@ -136,6 +136,7 @@ EOT;
 
 		$query = array(
 			'forum' => $this->EE->cx_disqus_model->settings['forum_shortname'],
+			'access_token' => $this->EE->cx_disqus_model->settings['access_token'],
 			'related' => 'thread',
 			'limit' => 100,
 			'order' => 'asc'

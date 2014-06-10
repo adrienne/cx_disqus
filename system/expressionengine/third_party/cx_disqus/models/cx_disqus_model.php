@@ -43,7 +43,7 @@ class Cx_disqus_model extends CI_Model
 			$this->settings = array();
 		}
 
-		foreach (array('forum_shortname', 'secretkey', 'last_api_request', 'last_comment_date') as $field)
+		foreach (array('forum_shortname', 'secretkey', 'access_token', 'last_api_request', 'last_comment_date') as $field)
 		{
 			if ( ! isset($this->settings[$field]))
 			{

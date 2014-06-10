@@ -36,6 +36,7 @@ class Cx_disqus_mcp {
 			'post_url' => CX_DISQUS_CP,
 			'forum_shortname' => $this->EE->cx_disqus_model->settings['forum_shortname'],
 			'secretkey' => $this->EE->cx_disqus_model->settings['secretkey'],
+			'access_token' => $this->EE->cx_disqus_model->settings['access_token'],
 			'display_welcome' => FALSE,
 			'error_code' => 0,
 			'error_message' => '',
@@ -50,13 +51,14 @@ class Cx_disqus_mcp {
 
 			$this->EE->cx_disqus_model->settings['forum_shortname'] = $this->EE->input->post('forum_shortname', TRUE);
 			$this->EE->cx_disqus_model->settings['secretkey'] = $this->EE->input->post('secretkey', TRUE);
+			$this->EE->cx_disqus_model->settings['access_token'] = $this->EE->input->post('access_token', TRUE);
 			$this->EE->cx_disqus_model->save_settings();
 
 			$this->EE->session->set_flashdata('message_success', lang('settings_updated'));
 			$this->EE->functions->redirect(BASE.AMP.$data['post_url']);
 		}
 
-		if (empty($data['forum_shortname']) OR empty($data['secretkey']))
+		if (empty($data['forum_shortname']) OR empty($data['secretkey']) OR empty($data['access_token']))
 		{
 			$data['display_welcome'] = TRUE;
 		}
@@ -69,15 +71,19 @@ class Cx_disqus_mcp {
 
 		// mask links to external Disqus URLs
 		$this->EE->lang->language['forum_shortname_desc'] = str_replace('DISQUS_DASHBOARD_URL',
-			'<a href="'.$this->EE->cp->masked_url('http://disqus.com/dashboard/').'" target="_blank">http://disqus.com/dashboard/</a>',
+			'<a href="'.$this->EE->cp->masked_url('https://disqus.com/admin/').'" target="_blank">http://disqus.com/dashboard/</a>',
 			$this->EE->lang->language['forum_shortname_desc']);
 
 		$this->EE->lang->language['secretkey_desc'] = str_replace('DISQUS_APPLICATIONS_URL',
-			'<a href="'.$this->EE->cp->masked_url('http://disqus.com/api/applications/').'" target="_blank">http://disqus.com/api/applications/</a>',
+			'<a href="'.$this->EE->cp->masked_url('https://disqus.com/api/applications/').'" target="_blank">http://disqus.com/api/applications/</a>',
 			$this->EE->lang->language['secretkey_desc']);
 
+		$this->EE->lang->language['access_token_desc'] = str_replace('DISQUS_APPLICATIONS_URL',
+			'<a href="'.$this->EE->cp->masked_url('https://disqus.com/api/applications/').'" target="_blank">http://disqus.com/api/applications/</a>',
+			$this->EE->lang->language['access_token_desc']);
+
 		$this->EE->lang->language['api_error_more_info'] = str_replace('DISQUS_API_ERRORS_URL',
-			'<a href="'.$this->EE->cp->masked_url('http://disqus.com/api/docs/errors/').'" target="_blank">'.lang('disqus_api_errors').'</a>',
+			'<a href="'.$this->EE->cp->masked_url('https://disqus.com/api/docs/errors/').'" target="_blank">'.lang('disqus_api_errors').'</a>',
 			$this->EE->lang->language['api_error_more_info']);
 
 		return $this->EE->load->view('settings', $data, TRUE);
@@ -149,6 +155,8 @@ class Cx_disqus_mcp {
 			try
 			{
 				$thread = $this->EE->disqusapi->threads->details(array(
+			'access_token' => $this->EE->cx_disqus_model->settings['access_token'],
+
 					'forum' => $this->EE->cx_disqus_model->settings['forum_shortname'],
 					'thread' => 'ident:'.(int)$comment['entry_id']
 				));
@@ -170,7 +178,9 @@ class Cx_disqus_mcp {
 		$comment_data = array(
 			'thread' => $this->_thread_map[$entry_id],
 			'message' => $comment['comment'],
-			'date' => $comment['comment_date']
+			'api_key' => 'E8Uh5l5fHZ6gD8U3KycjAIAk46f68Zw7C6eW8WSjZvCLXebZ7p0r1yrYDrLilk2F',
+			'date' => $comment['comment_date'],
+
 		);
 
 		if ( ! empty($comment['name']))
@@ -181,7 +191,7 @@ class Cx_disqus_mcp {
 
 		if ( ! empty($comment['email'])) $comment_data['author_email'] = trim($comment['email']);
 		if ( ! empty($comment['url'])) $comment_data['author_url'] = trim($comment['url']);
-		if ( ! empty($comment['ip_address'])) $comment_data['ip_address'] = $comment['ip_address'];
+		//if ( ! empty($comment['ip_address'])) $comment_data['ip_address'] = $comment['ip_address'];
 
 
 		try
@@ -200,6 +210,7 @@ class Cx_disqus_mcp {
 	{
 		$thread_data = array(
 			'forum' => $this->EE->cx_disqus_model->settings['forum_shortname'],
+			'access_token' => $this->EE->cx_disqus_model->settings['access_token'],
 			'title' => $entry['title'],
 			'identifier' => $entry['entry_id'],
 			'date' => $entry['entry_date']
@@ -220,7 +231,8 @@ class Cx_disqus_mcp {
 		$this->EE->disqusapi->setKey($this->EE->cx_disqus_model->settings['secretkey']);
 		try
 		{
-			$response = $this->EE->disqusapi->forums->details(array('forum' => $this->EE->cx_disqus_model->settings['forum_shortname']));
+			$response = $this->EE->disqusapi->forums->details(array('forum' => $this->EE->cx_disqus_model->settings['forum_shortname'],
+				'access_token' => $this->EE->cx_disqus_model->settings['access_token']));
 			return (object)array('code' => 0, 'message' => '');
 		}
 		catch (DisqusAPIError $e)
@@ -232,9 +244,10 @@ class Cx_disqus_mcp {
 	private function _show_export_error($error, $data)
 	{
 		// display the error and offending thread/comment
+var_dump($data);
+var_dump($error);
 		$message = '<strong>'.lang('disqus_export_error').'</strong>'.BR.BR;
 		$message .= 'Error '.$error->code.': '.$error->message.BR;
-
 		ob_start();
 		print_r($data);
 		$data_str = ob_get_contents();
