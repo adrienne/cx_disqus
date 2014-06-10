@@ -4,12 +4,6 @@ Disqus (http://disqus.com) allows users to comment on your entries everywhere. A
 
 CX Disqus Comments helps solve this problem by exporting your existing comments to Disqus, then syncing new Disqus comments back to ExpressionEngine’s internal database. This is especially great if you feel uneasy about a third party being responsible for the safe keeping of all those user comments!
 
-## Important!
-
-**Disqus have disabled their original authentication method (which this module was based on) for new accounts. While this module still works perfectly for existing accounts, it is no longer possible to use it with new Disqus accounts.**
-
-**We have released this module as open source so that others may either update it with OAuth support, or use it as a basis for their own modules.**
-
 ## Installation
 
 Follow these steps carefully. Setting up an API key to remotely access Disqus is not as easy as one would hope, and it’s important that you grant your API key the appropriate permissions, otherwise comment import/export won’t work!
@@ -18,11 +12,13 @@ Follow these steps carefully. Setting up an API key to remotely access Disqus is
 
 1. Upload the entire `cx_disqus` folder to `system/expressionengine/third_party` on your server.
 2. Under Add-ons > Modules, find “CX Disqus Comments” and click Install
-3. If you haven’t already, create a Disqus account, and add a new forum (you should create one forum to use for your entire website). You can create/view your Disqus forums at [http://disqus.com/dashboard/](http://disqus.com/dashboard/)). You will need to enter the forum shortname in the CX Disqus settings page.
+3. If you haven’t already, create a Disqus account, and add a new forum (you should create one forum to use for your entire website). You can create/view your Disqus forums at [http://disqus.com/admin/](http://disqus.com/admin/)). You will need to enter the forum shortname in the CX Disqus settings page.
+4. *If you have existing ExpressionEngine comments to export*, go to your new forum's settings and check the box marked “Allow guests to comment”. (You can uncheck this as soon as your export is finished, if you wish.)
 4. Go to [http://disqus.com/api/applications/](http://disqus.com/api/applications/), and click “Register new application”. Give your application a name (can be the same as your forum).
-5. Once your Disqus API application has been created, scroll down to the bottom of the settings and check the box next to your forum name. This will give your application write access to export existing EE comments.
-6. Also at the bottom of the API application settings page, make sure that under “Authentication”, “Inherit permissions from (yourusername)” is checked, rather than OAuth. CX Disqus does not support OAuth authentication at this stage.
-7. Copy the “Secret Key” from your Disqus API application to the CX DIsqus settings page. You’re now ready to add CX DIsqus to your templates!
+5. Once your Disqus API application has been created, scroll down to the bottom of the General Settings page and check the box next to your forum name. This will give your application write access to export existing EE comments.<br />
+**NOTE:** Right now there is nowhere to add these. It is a known issue with Disqus itself. As a result, a workaround is implemented using a hardcoded special API key. **However**, the workaround does not allow setting the date of comments. They will be exported in the proper *order*, but the dates will all be right on top of each other.
+6. Also at the bottom of the API application Settings page, make sure that under “Access”, you have selected “Read and Write”.
+7. Copy the “Secret Key” and the “Access Token” from your Disqus API application Details page to the CX Disqus settings page. You’re now ready to add CX Disqus to your templates!
 
 ## Comments Tag
 
