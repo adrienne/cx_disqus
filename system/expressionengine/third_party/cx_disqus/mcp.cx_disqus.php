@@ -179,8 +179,8 @@ class Cx_disqus_mcp {
 		$comment_data = array(
 			'thread' => $this->_thread_map[$entry_id],
 			'message' => $comment['comment'],
-			'api_key' => CX_API_KEY_SPECIAL,
-			'date' => $comment['comment_date'],
+			'api_key' => CX_API_KEY_SPECIAL, // TODO: FIX WHEN DISQUS BUG IS FIXED
+			//'date' => $comment['comment_date'],  // TODO: FIX WHEN DISQUS BUG IS FIXED
 
 		);
 
@@ -192,7 +192,7 @@ class Cx_disqus_mcp {
 
 		if ( ! empty($comment['email'])) $comment_data['author_email'] = trim($comment['email']);
 		if ( ! empty($comment['url'])) $comment_data['author_url'] = trim($comment['url']);
-		//if ( ! empty($comment['ip_address'])) $comment_data['ip_address'] = $comment['ip_address'];
+		//if ( ! empty($comment['ip_address'])) $comment_data['ip_address'] = $comment['ip_address']; // TODO: FIX WHEN DISQUS BUG IS FIXED
 
 
 		try
@@ -245,8 +245,6 @@ class Cx_disqus_mcp {
 	private function _show_export_error($error, $data)
 	{
 		// display the error and offending thread/comment
-var_dump($data);
-var_dump($error);
 		$message = '<strong>'.lang('disqus_export_error').'</strong>'.BR.BR;
 		$message .= 'Error '.$error->code.': '.$error->message.BR;
 		ob_start();
