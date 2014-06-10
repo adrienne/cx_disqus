@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-include(PATH_THIRD.'cx_disqus/config.php');
+include(PATH_THIRD.'cx_disqus/_config.php');
 
 class Cx_disqus_upd {
 
