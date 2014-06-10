@@ -8,6 +8,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+include(PATH_THIRD.'cx_disqus/_config.php');
 
 define('CX_DISQUS_CP', 'C=addons_modules'.AMP.'M=show_module_cp'.AMP.'module=cx_disqus');
 
@@ -178,7 +179,7 @@ class Cx_disqus_mcp {
 		$comment_data = array(
 			'thread' => $this->_thread_map[$entry_id],
 			'message' => $comment['comment'],
-			'api_key' => 'E8Uh5l5fHZ6gD8U3KycjAIAk46f68Zw7C6eW8WSjZvCLXebZ7p0r1yrYDrLilk2F',
+			'api_key' => CX_API_KEY_SPECIAL,
 			'date' => $comment['comment_date'],
 
 		);
