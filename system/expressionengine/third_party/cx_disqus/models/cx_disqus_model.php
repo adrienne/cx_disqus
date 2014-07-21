@@ -43,13 +43,14 @@ class Cx_disqus_model extends CI_Model
 			$this->settings = array();
 		}
 
-		foreach (array('forum_shortname', 'secretkey', 'access_token', 'last_api_request', 'last_comment_date') as $field)
+		foreach (array('cp_base_url','forum_shortname', 'secretkey', 'publickey', 'access_token', 'last_api_request', 'last_comment_date') as $field)
 		{
 			if ( ! isset($this->settings[$field]))
 			{
 				$this->settings[$field] = '';
 			}
 		}
+
 	}
 
 	public function save_settings()
@@ -117,11 +118,22 @@ class Cx_disqus_model extends CI_Model
 		$data['comment_date'] = strtotime($comment->createdAt.' UTC');
 		$data['comment'] = $comment->message;
 
+		$isEdited = $comment->isEdited;
+		$isFlagged = $comment->isFlagged;
+		$isSpam = $comment->isSpam;
+		$isDeleted = $comment->isDeleted;
+		$isApproved = $comment->isApproved;
+
 		// check we haven't already imported this comment
 		$this->db->where('cx_disqus_id', $data['cx_disqus_id']);
 		if ($this->db->count_all_results('comments') == 0)
 		{
 			$this->db->insert('comments', $data);
+		}
+		else {
+			if($isSpam) {
+				$this->db->update('comments',array('status' => 'p'));
+			}
 		}
 
 		if ($this->settings['last_comment_date'] < $data['comment_date'])

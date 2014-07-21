@@ -57,6 +57,21 @@ class Cx_disqus_upd {
 			'class' => CX_DISQUS_CLASS,
 			'method' => 'act_sync'
 		));
+		// register auth action
+		$this->EE->db->insert('actions', array(
+			'class' => CX_DISQUS_CLASS,
+			'method' => 'act_auth'
+		));
+		// register export action
+		$this->EE->db->insert('actions', array(
+			'class' => CX_DISQUS_CLASS,
+			'method' => 'act_export'
+		));
+
+		// insert CP base url into settings for later
+		$initsettings = array( '1' => array('cp_base_url' => BASE) );
+		$dbsettings = base64_encode(serialize($initsettings));
+		$this->EE->db->query("UPDATE exp_modules SET settings = '{$dbsettings}' WHERE module_name = '".CX_DISQUS_CLASS."';");
 
 		return TRUE;
 	}

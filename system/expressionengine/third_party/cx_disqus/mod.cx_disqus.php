@@ -19,6 +19,94 @@ class Cx_disqus {
 		$this->EE->load->model('cx_disqus_model');
 	}
 
+	public function act_auth() {
+		$mycode = $this->EE->input->get_post('code');
+		$myurl = strstr($this->EE->cx_disqus_model->settings['cp_base_url'],'?',TRUE);
+
+		$mysess = $this->EE->session->userdata('session_id');
+		$this->EE->functions->redirect($myurl.'?S='.$mysess.AMP.'D=cp'.AMP.CX_DISQUS_CP.AMP.'method=newapplication'.AMP.'code='.$mycode);
+
+		}
+
+	public function act_export() {
+
+		$sql1 = "SELECT DISTINCT t.title, t.url_title, l.comment_url, t.entry_id AS thread_identifier,
+				FROM_UNIXTIME(t.entry_date) AS post_date,
+				CASE WHEN ( comment_expiration_date = 0 OR comment_expiration_date > NOW() ) THEN 'open' ELSE 'closed' END AS comment_status
+				FROM
+					exp_channel_titles t
+					LEFT JOIN exp_comments c ON t.entry_id = c.entry_id
+					LEFT JOIN exp_channels l ON t.channel_id = l.channel_id
+				WHERE
+					comment_id IS NOT NULL
+				ORDER BY
+					thread_identifier, comment_date;";
+		$result1 = $this->EE->db->query($sql1)->result_array();
+		$sql2 = "SELECT DISTINCT c.entry_id, c.comment_id, `c.ip_address`,
+					FROM_UNIXTIME(c.comment_date) AS comment_date, c.`url` as author_url,
+					c.`name` AS author_name, c.`email` AS author_email, c.`comment` AS comment_content,
+					CASE WHEN status = 'o' THEN 1 ELSE 0 END AS comment_approved
+				FROM
+					exp_comments c
+				ORDER BY
+					comment_date;";
+		$result2 = $this->EE->db->query($sql2)->result_array();
+
+		if(sizeof($result1) == 0 || sizeof($result2) == 0) {
+			return FALSE;
+			}
+
+		$xml = new SimpleXMLElement("<?xml version=\"1.0\" encoding=\"utf-8\" ?><rss></rss>");
+
+		$xml->addAttribute('version', '2.0');
+		$xml->addAttribute('xmlns:content', 'http://purl.org/rss/1.0/modules/content/','xmlns');
+		$xml->addAttribute('xmlns:dsq', 'http://www.disqus.com/','xmlns');
+		$xml->addAttribute('xmlns:dc', 'http://purl.org/dc/elements/1.1/','xmlns');
+		$xml->addAttribute('xmlns:wp', 'http://wordpress.org/export/1.0/','xmlns');
+		$channel = $xml->addChild('channel');
+
+		foreach($result1 as $key=>$row) {
+			$urlbase = rtrim($_SERVER['REQUEST_SCHEME'].'://'.$_SERVER['SERVER_NAME'],'/' );
+			$comments_url = ( strpos($row['comment_url'],$_SERVER['SERVER_NAME']) > -1 )
+					? substr($row['comment_url'], (strpos($row['comment_url'],$_SERVER['SERVER_NAME'])+strlen($_SERVER['SERVER_NAME'])) )
+					: $row['comment_url'] ;
+			$post_id = $row['thread_identifier'];
+			$item = $channel->addChild('item');
+			$item->addChild('title',$row['title']);
+			$item->addChild('content:encoded',$row['title'],'content:encoded');
+			$item->addChild('link',$urlbase.$comments_url.$row['url_title'].'/');
+			$item->addChild('dsq:thread_identifier',$row['thread_identifier'],'dsq');
+			$item->addChild('wp:post_date_gmt',$row['post_date'],'wp');
+			$item->addChild('wp:comment_status',$row['comment_status'],'wp');
+			foreach($result2 as $inkey=>$inrow) {
+				$comment_post_id = $inrow['entry_id'];
+				if($comment_post_id == $post_id) {
+					$comment = $item->addChild('wp:comment',NULL,'wp');
+					$comment->addChild('wp:comment_id',$inrow['comment_id'],'wp');
+					$comment->addChild('wp:comment_author',$inrow['author_name'],'wp');
+					$comment->addChild('wp:comment_author_email',$inrow['author_email'],'wp');
+					$comment->addChild('wp:comment_author_url',$inrow['author_url'],'wp');
+					$comment->addChild('wp:comment_date_gmt',$inrow['comment_date'],'wp');
+					$comment->addChild('wp:comment_approved',$inrow['comment_approved'],'wp');
+					$comment->addChild('wp:comment_content',$inrow['comment_content'],'wp');
+					$comment->addChild('wp:comment_author_IP',$inrow['ip_address'],'wp');
+					}
+				}
+			}
+
+		$dt = time();
+		$me = $xml->asXML();
+
+		// the str_replace below is because simplexml is doing something strange.
+		file_put_contents( APPPATH.'cache/'.$dt.'.xml',str_replace(array(' xmlns:xmlns="xmlns"',' xmlns:wp="wp"',' xmlns:dsq="dsq"',' xmlns:content="content:encoded"'),'',$xml->saveXML()) );
+		ob_flush();
+		header('Content-Type: application/xml');
+		header('Content-disposition: attachment; filename=commentexport.xml');
+
+		readfile(APPPATH.'cache/'.$dt.'.xml');
+exit;
+	}
+
 	public function comments()
 	{
 		$this->EE->load->library('javascript');

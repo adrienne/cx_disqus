@@ -10,7 +10,7 @@
  */
 include(PATH_THIRD.'cx_disqus/_config.php');
 
-define('CX_DISQUS_CP', 'C=addons_modules'.AMP.'M=show_module_cp'.AMP.'module=cx_disqus');
+
 
 class Cx_disqus_mcp {
 
@@ -33,6 +33,14 @@ class Cx_disqus_mcp {
 	{
 		$this->EE->view->cp_page_title = lang('cx_disqus');
 
+
+		if (empty($this->EE->cx_disqus_model->settings['forum_shortname']) OR
+			empty($this->EE->cx_disqus_model->settings['secretkey']) ) {
+			$this->EE->functions->redirect(BASE.AMP.CX_DISQUS_CP.AMP.'method=newapplication');
+			}
+
+		if($this->EE->cx_disqus_model->settings['secretkey'])
+
 		$data = array(
 			'post_url' => CX_DISQUS_CP,
 			'forum_shortname' => $this->EE->cx_disqus_model->settings['forum_shortname'],
@@ -51,11 +59,13 @@ class Cx_disqus_mcp {
 			}
 
 			$this->EE->cx_disqus_model->settings['forum_shortname'] = $this->EE->input->post('forum_shortname', TRUE);
+			$this->EE->cx_disqus_model->settings['publickey'] = $this->EE->input->post('publickey', TRUE);
 			$this->EE->cx_disqus_model->settings['secretkey'] = $this->EE->input->post('secretkey', TRUE);
 			$this->EE->cx_disqus_model->settings['access_token'] = $this->EE->input->post('access_token', TRUE);
 			$this->EE->cx_disqus_model->save_settings();
 
 			$this->EE->session->set_flashdata('message_success', lang('settings_updated'));
+
 			$this->EE->functions->redirect(BASE.AMP.$data['post_url']);
 		}
 
@@ -72,7 +82,7 @@ class Cx_disqus_mcp {
 
 		// mask links to external Disqus URLs
 		$this->EE->lang->language['forum_shortname_desc'] = str_replace('DISQUS_DASHBOARD_URL',
-			'<a href="'.$this->EE->cp->masked_url('https://disqus.com/admin/').'" target="_blank">http://disqus.com/dashboard/</a>',
+			'<a href="'.$this->EE->cp->masked_url('https://disqus.com/admin/').'" target="_blank">http://disqus.com/admin/</a>',
 			$this->EE->lang->language['forum_shortname_desc']);
 
 		$this->EE->lang->language['secretkey_desc'] = str_replace('DISQUS_APPLICATIONS_URL',
@@ -90,8 +100,86 @@ class Cx_disqus_mcp {
 		return $this->EE->load->view('settings', $data, TRUE);
 	}
 
+
+	public function newapplication() {
+		$data = array(
+			'post_url' => CX_DISQUS_CP.AMP.'method=submitapplication',
+			);
+		$data['display'] = ($this->EE->input->get_post('code')) ? 'application' : 'welcome';
+		$data['code'] = $this->EE->input->get_post('code');
+		$data['auth_url'] = 'http://'.rtrim($_SERVER['SERVER_NAME'],'/').'/?'.'ACT='.$this->EE->cp->fetch_action_id('Cx_disqus', 'act_auth');
+
+		return $this->EE->load->view('setup', $data, TRUE);
+		}
+
+	public function submitapplication() {
+		$fields = array(
+			'grant_type'=>"api_key",
+			'code' => $this->EE->input->get_post('code'),
+			'application[website]' => rtrim($_SERVER['REQUEST_SCHEME'].'://'.$_SERVER['SERVER_NAME'],'/' ),
+			'application[label]' => $this->EE->input->get_post('applabel'),
+			'application[description]' => $this->EE->input->get_post('appdescription'),
+			'redirect_uri' => 'http://'.rtrim($_SERVER['SERVER_NAME'],'/').'/?'.'ACT='.$this->EE->cp->fetch_action_id('Cx_disqus','act_auth'),
+			);
+
+		$url = 'https://disqus.com/api/oauth/2.0/api_key/?';
+
+		//url-ify the data for the POST
+		$fields_string='';
+		foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
+		$fields_string=rtrim($fields_string, "&");
+
+		//open connection
+		$ch = curl_init();
+
+		//set the url, number of POST vars, POST data
+		curl_setopt($ch,CURLOPT_URL,$url);
+		curl_setopt($ch,CURLOPT_POST,1);
+		curl_setopt($ch,CURLOPT_POSTFIELDS,$fields_string);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		//execute post
+		$curldata = curl_exec($ch);
+
+		//close connection
+		curl_close($ch);
+
+		$mydata = json_decode($curldata,TRUE);
+
+		$this->EE->cx_disqus_model->settings['access_token'] = $mydata['access_token'];
+		$this->EE->cx_disqus_model->settings['publickey'] = $mydata['api_key'];
+		$this->EE->cx_disqus_model->settings['secretkey'] = $mydata['api_secret'];
+		$this->EE->cx_disqus_model->save_settings();
+
+		$data = array(
+			'post_url' => CX_DISQUS_CP.AMP.'method=newforum',
+			);
+
+		return $this->EE->load->view('forum', $data, TRUE);
+
+	}
+
+	public function newforum() {
+		$this->EE->disqusapi->setKey($this->EE->cx_disqus_model->settings['secretkey']);
+		$mydata = array(
+			'access_token' => $this->EE->cx_disqus_model->settings['access_token'],
+			'api_secret' => $this->EE->cx_disqus_model->settings['secretkey'],
+			'website' => rtrim($_SERVER['REQUEST_SCHEME'].'://'.$_SERVER['SERVER_NAME'],'/' ),
+			'name' => $this->EE->input->get_post('forumname'),
+			'short_name' => $this->EE->input->get_post('forumshortname'),
+			);
+		$response = $this->EE->disqusapi->forums->create($mydata);
+
+		$this->EE->cx_disqus_model->settings['forum_shortname'] = $response->id;
+		$this->EE->cx_disqus_model->save_settings();
+
+		$this->EE->functions->redirect(BASE.AMP.CX_DISQUS_CP);
+		}
+
 	public function export()
 	{
+
+/*
 		if (empty($this->EE->cx_disqus_model->settings['forum_shortname']) OR
 			empty($this->EE->cx_disqus_model->settings['secretkey']) OR
 			$this->_test_api()->code > 0)
@@ -116,8 +204,18 @@ class Cx_disqus_mcp {
 			$this->EE->functions->redirect(BASE.AMP.$data['post_url']);
 		}
 
+*/
+
+		$data = array('forumname' => $this->EE->cx_disqus_model->settings['forum_shortname'],
+			'match_url' => CX_DISQUS_CP.AMP.'method=match_duplicates',
+			'exp_url' =>  'http://'.rtrim($_SERVER['SERVER_NAME'],'/').'/?'.'ACT='.$this->EE->cp->fetch_action_id('Cx_disqus', 'act_export')
+			);
 		return $this->EE->load->view('export', $data, TRUE);
 	}
+
+	public function match_duplicates() {
+
+		}
 
 	public function advanced()
 	{
@@ -149,7 +247,7 @@ class Cx_disqus_mcp {
 	{
 		// find out the disqus thread id
 		$entry_id = (int)$comment['entry_id'];
-
+		$this->EE->disqusapi->setKey($this->EE->cx_disqus_model->settings['secretkey']);
 		if (empty($this->_thread_map[$entry_id]))
 		{
 			// query disqus for an existing thread
@@ -175,12 +273,11 @@ class Cx_disqus_mcp {
 				$this->_thread_map[$entry_id] = $thread->id;
 			}
 		}
-
+		$this->EE->disqusapi->setKey($this->EE->cx_disqus_model->settings['secretkey']);
 		$comment_data = array(
 			'thread' => $this->_thread_map[$entry_id],
 			'message' => $comment['comment'],
-			'api_key' => CX_API_KEY_SPECIAL, // TODO: FIX WHEN DISQUS BUG IS FIXED
-			//'date' => $comment['comment_date'],  // TODO: FIX WHEN DISQUS BUG IS FIXED
+			'date' => $comment['comment_date'],  // TODO: FIX WHEN DISQUS BUG IS FIXED
 
 		);
 
@@ -244,6 +341,7 @@ class Cx_disqus_mcp {
 
 	private function _show_export_error($error, $data)
 	{
+		var_dump($error);
 		// display the error and offending thread/comment
 		$message = '<strong>'.lang('disqus_export_error').'</strong>'.BR.BR;
 		$message .= 'Error '.$error->code.': '.$error->message.BR;
